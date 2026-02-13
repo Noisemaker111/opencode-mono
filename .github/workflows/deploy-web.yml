@@ -67,7 +67,7 @@ jobs:
         env:
           VITE_RELEASE_CHANNEL: ${{ steps.meta.outputs.release_channel }}
           VITE_RELEASE_REPOSITORY: ${{ steps.meta.outputs.release_repository }}
-        run: bun --cwd apps/web run build
+        run: bun run --cwd apps/web build
 
       - name: Upload website artifact
         uses: actions/upload-artifact@v6
