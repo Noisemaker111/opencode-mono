@@ -36,7 +36,7 @@ jobs:
         run: bun run check-types
 
       - name: Build website
-        run: bun --cwd apps/web run build
+        run: bun run --cwd apps/web build
 
       - name: Validate version alignment
         shell: bash

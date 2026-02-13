@@ -32,10 +32,24 @@ fn redact_value(value: &str) -> String {
 /// Redact sensitive query parameters in URL
 fn redact_url(url: &str) -> String {
     let sensitive_params = [
-    let sensitive_params = [
-        "key", "api_key", "apikey", "token", "access_token", "secret",
-        "password", "auth", "authorization", "bearer", "credential",
-        "user", "user_id", "userid", "account_id", "accountid", "email", "login",
+        "key",
+        "api_key",
+        "apikey",
+        "token",
+        "access_token",
+        "secret",
+        "password",
+        "auth",
+        "authorization",
+        "bearer",
+        "credential",
+        "user",
+        "user_id",
+        "userid",
+        "account_id",
+        "accountid",
+        "email",
+        "login",
     ];
 
     if let Some(query_start) = url.find('?') {
@@ -1332,10 +1346,7 @@ fn inject_sqlite<'js>(ctx: &Ctx<'js>, host: &Object<'js>) -> rquickjs::Result<()
                     .args(["-readonly", "-json", &expanded, &sql])
                     .output()
                     .map_err(|e| {
-                        Exception::throw_message(
-                            &ctx_inner,
-                            &format!("sqlite3 exec failed: {}", e),
-                        )
+                        Exception::throw_message(&ctx_inner, &format!("sqlite3 exec failed: {}", e))
                     })?;
 
                 if primary.status.success() {
@@ -1645,8 +1656,16 @@ mod tests {
     fn redact_url_redacts_user_query_param() {
         let url = "https://cursor.com/api/usage?user=user_abcdefghijklmnopqrstuvwxyz&limit=10";
         let redacted = redact_url(url);
-        assert!(redacted.contains("user=user...wxyz"), "user query param should be redacted, got: {}", redacted);
-        assert!(redacted.contains("limit=10"), "non-sensitive params should be preserved, got: {}", redacted);
+        assert!(
+            redacted.contains("user=user...wxyz"),
+            "user query param should be redacted, got: {}",
+            redacted
+        );
+        assert!(
+            redacted.contains("limit=10"),
+            "non-sensitive params should be preserved, got: {}",
+            redacted
+        );
     }
 
     #[test]
@@ -1716,10 +1735,26 @@ mod tests {
     fn redact_body_redacts_camel_case_user_and_account_ids() {
         let body = r#"{"userId": "user_abcdefghijklmnopqrstuvwxyz", "accountId": "acct_1234567890abcdef"}"#;
         let redacted = redact_body(body);
-        assert!(!redacted.contains("user_abcdefghijklmnopqrstuvwxyz"), "userId should be redacted, got: {}", redacted);
-        assert!(!redacted.contains("acct_1234567890abcdef"), "accountId should be redacted, got: {}", redacted);
-        assert!(redacted.contains("user...wxyz"), "userId should show first4...last4, got: {}", redacted);
-        assert!(redacted.contains("acct...cdef"), "accountId should show first4...last4, got: {}", redacted);
+        assert!(
+            !redacted.contains("user_abcdefghijklmnopqrstuvwxyz"),
+            "userId should be redacted, got: {}",
+            redacted
+        );
+        assert!(
+            !redacted.contains("acct_1234567890abcdef"),
+            "accountId should be redacted, got: {}",
+            redacted
+        );
+        assert!(
+            redacted.contains("user...wxyz"),
+            "userId should show first4...last4, got: {}",
+            redacted
+        );
+        assert!(
+            redacted.contains("acct...cdef"),
+            "accountId should show first4...last4, got: {}",
+            redacted
+        );
     }
 
     #[test]
