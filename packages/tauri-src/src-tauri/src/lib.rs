@@ -4,17 +4,17 @@ mod app_nap;
 mod panel;
 mod plugin_engine;
 mod tray;
-mod window_manager;
 #[cfg(target_os = "macos")]
 mod webkit_config;
+mod window_manager;
 
 use std::collections::{HashMap, HashSet};
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex, OnceLock};
 
 use serde::Serialize;
 use tauri::{Emitter, Manager, State};
+use tauri_plugin_aptabase::EventTracker;
 use tauri_plugin_log::{Target, TargetKind};
 use uuid::Uuid;
 
@@ -34,10 +34,29 @@ fn managed_shortcut_slot() -> &'static Mutex<Option<String>> {
 }
 
 #[cfg(desktop)]
-fn handle_global_shortcut(app: &tauri::AppHandle, event: tauri_plugin_global_shortcut::ShortcutEvent) {
+fn handle_global_shortcut(
+    app: &tauri::AppHandle,
+    event: tauri_plugin_global_shortcut::ShortcutEvent,
+) {
     if event.state == ShortcutState::Pressed {
         log::debug!("Global shortcut triggered");
-        panel::toggle_panel(app);
+
+        #[cfg(target_os = "macos")]
+        {
+            panel::toggle_panel(app);
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        {
+            if let Some(window) = app.get_webview_window("main") {
+                if window.is_visible().unwrap_or(false) {
+                    let _ = window.hide();
+                } else {
+                    let _ = window.show();
+                    let _ = window.set_focus();
+                }
+            }
+        }
     }
 }
 
@@ -52,19 +71,26 @@ pub struct AppState {
 
 #[tauri::command]
 fn get_taskbar_position(state: State<'_, Mutex<AppState>>) -> Option<String> {
-    state.lock().unwrap().last_taskbar_position.as_ref().map(|p| match p {
-        TaskbarPosition::Top => "top",
-        TaskbarPosition::Bottom => "bottom", 
-        TaskbarPosition::Left => "left",
-        TaskbarPosition::Right => "right",
-    }.to_string())
+    state
+        .lock()
+        .unwrap()
+        .last_taskbar_position
+        .as_ref()
+        .map(|p| {
+            match p {
+                TaskbarPosition::Top => "top",
+                TaskbarPosition::Bottom => "bottom",
+                TaskbarPosition::Left => "left",
+                TaskbarPosition::Right => "right",
+            }
+            .to_string()
+        })
 }
 
 #[tauri::command]
 fn get_arrow_offset(state: State<'_, Mutex<AppState>>) -> Option<i32> {
     state.lock().unwrap().last_arrow_offset
 }
-
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -117,8 +143,6 @@ fn init_panel(app_handle: tauri::AppHandle) {
 fn hide_panel(app_handle: tauri::AppHandle) {
     window_manager::WindowManager::hide(&app_handle).expect("Failed to hide window");
 }
-
-
 
 #[tauri::command]
 async fn start_probe_batch(
@@ -214,18 +238,30 @@ async fn start_probe_batch(
                     if has_error {
                         log::warn!("probe {} completed with error", plugin_id);
                     } else {
-                        log::info!("probe {} completed ok ({} lines)", plugin_id, output.lines.len());
+                        log::info!(
+                            "probe {} completed ok ({} lines)",
+                            plugin_id,
+                            output.lines.len()
+                        );
                     }
-                    
+
                     // Store result in AppState for tray menu access
                     {
                         let state = handle.state::<Mutex<AppState>>();
                         if let Ok(mut app_state) = state.lock() {
-                            app_state.latest_probe_results.insert(plugin_id.clone(), output.clone());
+                            app_state
+                                .latest_probe_results
+                                .insert(plugin_id.clone(), output.clone());
                         }
                     }
-                    
-                    let _ = handle.emit("probe:result", ProbeResult { batch_id: bid, output });
+
+                    let _ = handle.emit(
+                        "probe:result",
+                        ProbeResult {
+                            batch_id: bid,
+                            output,
+                        },
+                    );
                 }
                 Err(_) => {
                     log::error!("probe {} panicked", plugin_id);
@@ -266,7 +302,10 @@ fn get_log_path(app_handle: tauri::AppHandle) -> Result<String, String> {
 /// Pass `null` to disable the shortcut, or a shortcut string like "CommandOrControl+Shift+U".
 #[cfg(desktop)]
 #[tauri::command]
-fn update_global_shortcut(app_handle: tauri::AppHandle, shortcut: Option<String>) -> Result<(), String> {
+fn update_global_shortcut(
+    app_handle: tauri::AppHandle,
+    shortcut: Option<String>,
+) -> Result<(), String> {
     let global_shortcut = app_handle.global_shortcut();
     let normalized_shortcut = shortcut.and_then(|value| {
         let trimmed = value.trim().to_string();
@@ -293,7 +332,11 @@ fn update_global_shortcut(app_handle: tauri::AppHandle, shortcut: Option<String>
                 *managed_shortcut = None;
             }
             Err(e) => {
-                log::warn!("Failed to unregister existing shortcut '{}': {}", existing, e);
+                log::warn!(
+                    "Failed to unregister existing shortcut '{}': {}",
+                    existing,
+                    e
+                );
             }
         }
     }
@@ -433,10 +476,10 @@ pub fn run() {
                 last_arrow_offset: None,
             }));
 
-
             tray::create(app.handle())?;
 
-            app.handle().plugin(tauri_plugin_updater::Builder::new().build())?;
+            app.handle()
+                .plugin(tauri_plugin_updater::Builder::new().build())?;
 
             // Register global shortcut from stored settings
             #[cfg(desktop)]
@@ -457,7 +500,8 @@ pub fn run() {
                                     },
                                 ) {
                                     log::warn!("Failed to register initial global shortcut: {}", e);
-                                } else if let Ok(mut managed_shortcut) = managed_shortcut_slot().lock()
+                                } else if let Ok(mut managed_shortcut) =
+                                    managed_shortcut_slot().lock()
                                 {
                                     *managed_shortcut = Some(shortcut.to_string());
                                 } else {

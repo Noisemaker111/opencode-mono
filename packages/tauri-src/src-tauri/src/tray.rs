@@ -8,10 +8,9 @@ use tauri::tray::{MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_store::StoreExt;
 
-use crate::panel::{get_or_init_panel, position_panel_at_tray_icon, show_panel};
-use crate::plugin_engine::runtime::{MetricLine, PluginOutput};
-use crate::window_manager::{position_window_at_tray, WindowManager};
 use crate::AppState;
+use crate::plugin_engine::runtime::{MetricLine, PluginOutput};
+use crate::window_manager::{WindowManager, position_window_at_tray};
 
 const LOG_LEVEL_STORE_KEY: &str = "logLevel";
 

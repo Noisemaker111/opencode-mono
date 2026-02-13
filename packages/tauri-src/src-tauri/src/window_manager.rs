@@ -1,7 +1,16 @@
-use tauri::{AppHandle, Emitter, Manager, PhysicalPosition};
+use tauri::AppHandle;
+
+#[cfg(any(target_os = "windows", target_os = "linux"))]
+use tauri::Manager;
+
+#[cfg(target_os = "windows")]
+use tauri::{Emitter, PhysicalPosition};
 
 #[cfg(target_os = "macos")]
 use tauri::{Position, Size};
+
+#[cfg(target_os = "macos")]
+use tauri_nspanel::ManagerExt;
 
 /// Platform-specific window manager
 pub struct WindowManager;
