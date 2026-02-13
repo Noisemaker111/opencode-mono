@@ -13,11 +13,13 @@ const PRODUCTION_BODY_CLASS =
 const PRODUCTION_STYLESHEET_URL =
   "https://www.openusage.ai/_next/static/chunks/18141af1dfe18c48.css?dpl=dpl_FEcNUMfudsUjMFbSH2z2Gkhx1iG7";
 const DEFAULT_RELEASE_REPOSITORY = "Noisemaker111/openusage-mono";
+const LEGACY_RELEASE_REPOSITORY = "robinebers/openusage";
 const RELEASE_REPOSITORY =
   import.meta.env.VITE_RELEASE_REPOSITORY && import.meta.env.VITE_RELEASE_REPOSITORY.trim().length > 0
     ? import.meta.env.VITE_RELEASE_REPOSITORY.trim()
     : DEFAULT_RELEASE_REPOSITORY;
 const DEFAULT_GITHUB_REPOSITORY_URL = `https://github.com/${DEFAULT_RELEASE_REPOSITORY}`;
+const LEGACY_GITHUB_REPOSITORY_URL = `https://github.com/${LEGACY_RELEASE_REPOSITORY}`;
 const RAW_RELEASE_CHANNEL = import.meta.env.VITE_RELEASE_CHANNEL;
 const RELEASE_CHANNEL =
   RAW_RELEASE_CHANNEL === "dev"
@@ -585,6 +587,18 @@ function getPlatformLabel(platform: Platform): string {
   }
 
   return "your platform";
+}
+
+function rewriteLegacyRepositoryLinks(repositoryUrl: string): void {
+  for (const anchor of Array.from(document.querySelectorAll<HTMLAnchorElement>("a[href]"))) {
+    const href = anchor.getAttribute("href");
+    if (href === null || !href.startsWith(LEGACY_GITHUB_REPOSITORY_URL)) {
+      continue;
+    }
+
+    const suffix = href.slice(LEGACY_GITHUB_REPOSITORY_URL.length);
+    anchor.setAttribute("href", `${repositoryUrl}${suffix}`);
+  }
 }
 
 function getPlatformTrackSummary(
@@ -1168,6 +1182,7 @@ function HomeComponent() {
     updateMenuBarClock();
     const clockInterval = window.setInterval(updateMenuBarClock, 30_000);
     const repositoryUrl = GITHUB_REPOSITORY?.url ?? DEFAULT_GITHUB_REPOSITORY_URL;
+    rewriteLegacyRepositoryLinks(repositoryUrl);
     updateMenuBarGithubStars(null, repositoryUrl);
 
     applyDownloadUi(buildDownloadOptions([]), platform, architecture, null);
