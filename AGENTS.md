@@ -58,6 +58,9 @@ Guide for agentic coding assistants working in `openusage-mono`.
 - Dev desktop release: `.github/workflows/release-dev.yml` (push to `dev`)
 - Stable desktop release: `.github/workflows/release-stable.yml` (tags `v*`)
 - Web deployment is via Vercel Git integration.
+- Vercel production behavior depends on Vercel "Production Branch":
+  - If Production Branch is `main` (default), `dev` gets preview deploys and `main` gets live web.
+  - If Production Branch is `dev`, every push to `dev` updates live web; desktop release flows stay unchanged.
 
 ## 5) Day-to-Day Shipping Flow
 1. Branch from `dev` (`feature/...`, `fix/...`).
@@ -67,6 +70,8 @@ Guide for agentic coding assistants working in `openusage-mono`.
 5. Open PR `dev -> main`.
 6. Merge to `main` to deploy production web.
 7. Tag from `main` (`vX.Y.Z`) for stable desktop release.
+
+When Vercel Production Branch is switched to `dev`, step 6 is no longer required for web deploys (but keep `dev -> main` for stable release promotion/tagging discipline).
 
 ## 6) Release Version Sync
 - Before stable tagging run: `bun run release:version 0.6.1`
