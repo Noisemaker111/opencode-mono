@@ -12,7 +12,7 @@ const PRODUCTION_BODY_CLASS =
   "geistsans_d5a4f12f-module__Ur3q_a__variable geistpixelcircle_7ee616e3-module__hUl13q__variable antialiased";
 const PRODUCTION_STYLESHEET_URL =
   "https://www.openusage.ai/_next/static/chunks/18141af1dfe18c48.css?dpl=dpl_FEcNUMfudsUjMFbSH2z2Gkhx1iG7";
-const DEFAULT_RELEASE_REPOSITORY = "Noisemaker111/opencode-mono";
+const DEFAULT_RELEASE_REPOSITORY = "Noisemaker111/openusage-mono";
 const RELEASE_REPOSITORY =
   import.meta.env.VITE_RELEASE_REPOSITORY && import.meta.env.VITE_RELEASE_REPOSITORY.trim().length > 0
     ? import.meta.env.VITE_RELEASE_REPOSITORY.trim()
